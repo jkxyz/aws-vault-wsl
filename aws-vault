@@ -1,0 +1,82 @@
+#!/bin/sh
+
+# Initialize variables
+found_exec=false
+profile=""
+command_args=""
+aws_flags=""
+
+# Function to check if string starts with -
+is_flag() {
+    case "$1" in
+        -*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Function to add to aws flags with proper spacing
+add_aws_flag() {
+    if [ -z "$aws_flags" ]; then
+        aws_flags="$1"
+    else
+        aws_flags="$aws_flags $1"
+    fi
+}
+
+# Function to add to command args with proper spacing
+add_cmd_arg() {
+    if [ -z "$command_args" ]; then
+        command_args="$1"
+    else
+        command_args="$command_args $1"
+    fi
+}
+
+# Process arguments
+while [ $# -gt 0 ]; do
+    if [ "$1" = "exec" ]; then
+        found_exec=true
+        shift
+        continue
+    fi
+    
+    if [ "$found_exec" = true ]; then
+        # Skip the -- delimiter if present
+        if [ "$1" = "--" ]; then
+            shift
+            continue
+        fi
+        
+        # If we don't have a profile yet and this isn't a flag, it's the profile
+        if [ -z "$profile" ] && ! is_flag "$1"; then
+            profile="$1"
+        # If it's a flag, it goes to aws-vault
+        elif is_flag "$1"; then
+            add_aws_flag "$1"
+        # If we have the profile, everything else is part of the command
+        # unless it's a recognized aws-vault flag
+        else
+            add_cmd_arg "$1"
+        fi
+    else
+        add_aws_flag "$1"
+    fi
+    shift
+done
+
+# Handle different cases
+if [ "$found_exec" = true ]; then
+    # Use $SHELL as default if no command specified
+    if [ -z "$command_args" ]; then
+        command_args="$SHELL"
+    fi
+    
+    # Execute with environment passing
+    # shellcheck disable=SC2086
+    # shellcheck disable=SC2016
+    exec aws-vault.exe exec $aws_flags $profile -- powershell.exe wsl.exe env '$(gci env:AWS_* | ForEach-Object { $_.Name + "=" + $_.Value })' $command_args
+else
+    # For non-exec commands, pass everything through
+    # shellcheck disable=SC2086
+    exec aws-vault.exe $aws_flags
+fi
