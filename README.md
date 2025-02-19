@@ -16,3 +16,5 @@ Install into a Nix profile:
 ```
 $ nix profile install github:jkxyz/aws-vault-wsl
 ```
+
+You can also manually install the script by checking out this repo and running `sudo install aws-vault /usr/local/bin/`.
