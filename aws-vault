@@ -81,7 +81,7 @@ if [ "$found_exec" = true ]; then
   # shellcheck disable=SC2086
   # shellcheck disable=SC2016
   # shellcheck disable=SC2046
-  exec aws-vault.exe exec $aws_flags $profile -- powershell.exe -Command 'wsl.exe --cd "'$(pwd)'" sh -l -c "env $(gci env:AWS_* | ForEach-Object { "$($_.Name)=$($_.Value)" }) '$command_args'"'
+  exec aws-vault.exe exec $aws_flags $profile -- powershell.exe -NoLogo -NoProfile -Command '& { $wsl = "$env:SystemRoot\Sysnative\wsl.exe"; if (-not (Test-Path $wsl)) { $wsl = "wsl.exe" }; & $wsl --cd "'$(pwd)'" sh -l -c "env $(gci env:AWS_* | ForEach-Object { "$($_.Name)=$($_.Value)" }) '$command_args'" }'
 else
   # For non-exec commands, pass everything through
   # shellcheck disable=SC2086
